@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Калькулятор струмів КЗ</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 30px;
+      background-color: #f2f2f2;
+    }
+    .container {
+      max-width: 700px;
+      background-color: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    input, select, button {
+      width: 100%;
+      padding: 10px;
+      margin-top: 10px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+    h2 {
+      color: #333;
+    }
+    .results {
+      background-color: #e6ffe6;
+      padding: 10px;
+      margin-top: 15px;
+      border: 1px solid #99cc99;
+      border-radius: 5px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Калькулятор струмів короткого замикання</h2>
+
+    <label>Напруга, кВ:</label>
+    <input type="number" id="voltage" value="10">
+
+    <label>Потужність КЗ, MВА (для трифазного):</label>
+    <input type="number" id="skz" value="500">
+
+    <label>Імпеданс Z (ом):</label>
+    <input type="number" id="z" value="0.5">
+
+    <label>Час дії струму КЗ, сек:</label>
+    <input type="number" id="time" value="1">
+
+    <label>Перетин кабелю, мм²:</label>
+    <input type="number" id="s" value="150">
+
+    <label>Матеріал кабелю:</label>
+    <select id="material">
+      <option value="m">Мідь</option>
+      <option value="a">Алюміній</option>
+    </select>
+
+    <label>Тип КЗ:</label>
+    <select id="type">
+      <option value="3">Трифазне</option>
+      <option value="1">Однофазне</option>
+    </select>
+
+    <button onclick="calculate()">Розрахувати</button>
+
+    <div class="results" id="results"></div>
+  </div>
+
+  <script>
+    function calculate() {
+      const U = parseFloat(document.getElementById('voltage').value) * 1000; // В у Вольтах
+      const Skz = parseFloat(document.getElementById('skz').value) * 1e6; // В ВА
+      const Z = parseFloat(document.getElementById('z').value);
+      const t = parseFloat(document.getElementById('time').value);
+      const S = parseFloat(document.getElementById('s').value);
+      const material = document.getElementById('material').value;
+      const type = document.getElementById('type').value;
+
+      const K = material === 'm' ? 143 : 76; // Мідь або алюміній
+
+      let Ikz = 0;
+      if (type === '3') {
+        Ikz = Skz / (Math.sqrt(3) * U);
+      } else {
+        Ikz = U / Z;
+      }
+
+      const I2t = Ikz * Ikz * t;
+      const thermal_limit = K * K * S * S;
+      const dynamic_limit = 2.5 * Ikz;
+
+      document.getElementById('results').innerHTML = `
+        <b>Струм КЗ:</b> ${Ikz.toFixed(2)} A<br>
+        <b>I²·t:</b> ${I2t.toFixed(2)}<br>
+        <b>Термічна стійкість (K²·S²):</b> ${thermal_limit.toFixed(2)} (${I2t <= thermal_limit ? '✅' : '❌'})<br>
+        <b>Динамічна стійкість (2.5·Iкз):</b> ${dynamic_limit.toFixed(2)} A
+      `;
+    }
+  </script>
+</body>
+</html>
