@@ -1,107 +1,67 @@
 <!DOCTYPE html>
 <html lang="uk">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Калькулятор струмів КЗ</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 30px;
-      background-color: #f2f2f2;
-    }
-    .container {
-      max-width: 700px;
-      background-color: white;
-      padding: 20px;
-      border-radius: 10px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
-    }
-    input, select, button {
-      width: 100%;
-      padding: 10px;
-      margin-top: 10px;
-      border-radius: 5px;
-      border: 1px solid #ccc;
-    }
-    h2 {
-      color: #333;
-    }
-    .results {
-      background-color: #e6ffe6;
-      padding: 10px;
-      margin-top: 15px;
-      border: 1px solid #99cc99;
-      border-radius: 5px;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Калькулятор вибору кабелю</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background-color: #f9f9f9; }
+        h1 { color: #2c3e50; }
+        label { display: block; margin-top: 10px; }
+        input { padding: 5px; width: 100%; max-width: 300px; }
+        button { margin-top: 20px; padding: 10px 20px; background-color: #3498db; color: white; border: none; cursor: pointer; }
+        button:hover { background-color: #2980b9; }
+        .result { margin-top: 20px; background-color: #ecf0f1; padding: 15px; border-radius: 5px; }
+    </style>
 </head>
 <body>
-  <div class="container">
-    <h2>Калькулятор струмів короткого замикання</h2>
+    <h1>Калькулятор вибору кабелю для ПС</h1>
 
-    <label>Напруга, кВ:</label>
-    <input type="number" id="voltage" value="10">
-
-    <label>Потужність КЗ, MВА (для трифазного):</label>
-    <input type="number" id="skz" value="500">
-
-    <label>Імпеданс Z (ом):</label>
-    <input type="number" id="z" value="0.5">
-
-    <label>Час дії струму КЗ, сек:</label>
-    <input type="number" id="time" value="1">
-
-    <label>Перетин кабелю, мм²:</label>
-    <input type="number" id="s" value="150">
-
-    <label>Матеріал кабелю:</label>
-    <select id="material">
-      <option value="m">Мідь</option>
-      <option value="a">Алюміній</option>
-    </select>
-
-    <label>Тип КЗ:</label>
-    <select id="type">
-      <option value="3">Трифазне</option>
-      <option value="1">Однофазне</option>
-    </select>
-
+    <label>Напруга U (кВ): <input type="number" id="U" value="10"></label>
+    <label>Потужнiсть трансформатора SТ (кВА): <input type="number" id="ST" value="2000"></label>
+    <label>Розрахункове навантаження SМ (кВА): <input type="number" id="SM" value="1300"></label>
+    <label>Час роботи TМ (год): <input type="number" id="TM" value="4000"></label>
+    <label>Струм КЗ Iк (кА): <input type="number" id="Ik" value="2.5"></label>
+    <label>Час КЗ tф (с): <input type="number" id="tphi" value="2.5"></label>
     <button onclick="calculate()">Розрахувати</button>
 
-    <div class="results" id="results"></div>
-  </div>
+    <div class="result" id="output"></div>
 
-  <script>
-    function calculate() {
-      const U = parseFloat(document.getElementById('voltage').value) * 1000; // В у Вольтах
-      const Skz = parseFloat(document.getElementById('skz').value) * 1e6; // В ВА
-      const Z = parseFloat(document.getElementById('z').value);
-      const t = parseFloat(document.getElementById('time').value);
-      const S = parseFloat(document.getElementById('s').value);
-      const material = document.getElementById('material').value;
-      const type = document.getElementById('type').value;
+    <script>
+        function calculate() {
+            const U = parseFloat(document.getElementById('U').value);
+            const ST = parseFloat(document.getElementById('ST').value);
+            const SM = parseFloat(document.getElementById('SM').value);
+            const TM = parseFloat(document.getElementById('TM').value);
+            const Ik = parseFloat(document.getElementById('Ik').value) * 1000; // A
+            const tphi = parseFloat(document.getElementById('tphi').value);
 
-      const K = material === 'm' ? 143 : 76; // Мідь або алюміній
+            const UNOM = U * 1000;
+            const IM = (SM / 2) / (Math.sqrt(3) * U); // A
+            const IMPA = 2 * IM;
 
-      let Ikz = 0;
-      if (type === '3') {
-        Ikz = Skz / (Math.sqrt(3) * U);
-      } else {
-        Ikz = U / Z;
-      }
+            // Економічна густина струму для Tм = 4000 год
+            const Jek = 1.4; // A/mm^2
+            const Sek = IM / Jek;
 
-      const I2t = Ikz * Ikz * t;
-      const thermal_limit = K * K * S * S;
-      const dynamic_limit = 2.5 * Ikz;
+            // Перевірка термостійкості
+            const CT = 92; // A·с^0.5/мм^2
+            const Smin = (Ik * Math.sqrt(tphi)) / CT;
 
-      document.getElementById('results').innerHTML = `
-        <b>Струм КЗ:</b> ${Ikz.toFixed(2)} A<br>
-        <b>I²·t:</b> ${I2t.toFixed(2)}<br>
-        <b>Термічна стійкість (K²·S²):</b> ${thermal_limit.toFixed(2)} (${I2t <= thermal_limit ? '✅' : '❌'})<br>
-        <b>Динамічна стійкість (2.5·Iкз):</b> ${dynamic_limit.toFixed(2)} A
-      `;
-    }
-  </script>
+            let output = `<strong>Результати розрахунку:</strong><br>`;
+            output += `Розрахунковий струм IМ = ${IM.toFixed(2)} A<br>`;
+            output += `Максимальний IМ.пА = ${IMPA.toFixed(2)} A<br>`;
+            output += `Економічний переріз Sек = ${Sek.toFixed(1)} мм²<br>`;
+            output += `Мінімальний переріз по термостійкості Sмін ≥ ${Smin.toFixed(1)} мм²<br>`;
+
+            if (Smin > Sek) {
+                output += `<span style="color: red;">⚠️ Необхідно збільшити переріз до не менше ніж ${Math.ceil(Smin / 5) * 5} мм²</span>`;
+            } else {
+                output += `<span style="color: green;">✅ Вибраний переріз задовольняє умови термічної стійкості</span>`;
+            }
+
+            document.getElementById('output').innerHTML = output;
+        }
+    </script>
 </body>
 </html>
